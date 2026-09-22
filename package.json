@@ -1,0 +1,17 @@
+{
+  "name": "hado-cloudflare-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hado SEO middleware: a thin Cloudflare Worker that pre-filters bot traffic and serves prerendered HTML from Hado SEO — no DNS changes required.",
+  "type": "module",
+  "scripts": {
+    "login": "wrangler login",
+    "secret": "wrangler secret put HADO_API_KEY",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.75.0"
+  }
+}

@@ -1,0 +1,22 @@
+# Hado SEO middleware Worker — see https://docs.hadoseo.com/integrations/cloudflare-worker
+name = "my-site-seo-proxy"
+main = "src/worker.js"
+compatibility_date = "2025-05-05"
+
+# Route the Worker in front of your site — every hostname that serves
+# pages. Include www (or any other subdomain) if it serves traffic.
+# Replace example.com with your domain in both patterns and zone_name.
+# (NOTE: routes must stay ABOVE [vars] — in TOML, keys after a [table]
+# header belong to that table, and routes inside [vars] silently attach
+# nothing.)
+routes = [
+  { pattern = "example.com/*", zone_name = "example.com" },
+  { pattern = "www.example.com/*", zone_name = "example.com" }
+]
+
+[vars]
+HADO_RENDER_ENDPOINT = "https://serve.hadoseo.com/v1/render"
+
+# Your API key is a SECRET, never a [vars] entry (vars are visible in the
+# dashboard and in this file):
+#   npx wrangler secret put HADO_API_KEY
