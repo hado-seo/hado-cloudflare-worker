@@ -33,7 +33,7 @@ analytics. No visitor IP is ever sent on that path.
   onboarding path, and an API key (`hado_sk_...`) — sign up at
   [hadoseo.com/auth](https://hadoseo.com/auth).
 
-## Quick start
+## Get the code
 
 ```bash
 git clone https://github.com/hado-seo/hado-cloudflare-worker.git my-site-seo-proxy
@@ -41,42 +41,120 @@ cd my-site-seo-proxy
 npm install
 ```
 
-1. **Edit `wrangler.toml`** — replace `example.com` with your domain in both
-   route `pattern`s and `zone_name`. Include every hostname that serves pages
-   (`www.` too, if it serves traffic).
+Then **edit `wrangler.toml`**:
 
-2. **Set your API key as a secret** (never a `[vars]` entry — vars are visible
-   in the dashboard and in `wrangler.toml`):
+- Replace `example.com` with your domain in both route `pattern`s and
+  `zone_name`. Include every hostname that serves pages (`www.` too, if it
+  serves traffic).
+- Optionally change `name` — that's the Worker's name in your Cloudflare
+  account.
 
-   ```bash
-   npx wrangler login                    # first time only
-   npx wrangler secret put HADO_API_KEY  # paste hado_sk_... when prompted
-   ```
+## Deploy
 
-3. **Deploy:**
+### 1. Authenticate the Wrangler CLI (first time only)
 
-   ```bash
-   npx wrangler deploy
-   ```
+```bash
+npx wrangler login
+```
 
-   Deploying attaches the routes: from this moment every request to your
-   domain passes through the Worker. Humans are unaffected (one header check,
-   then your app) — there is no cutover moment to schedule.
+This opens a browser window to authorize the CLI against your Cloudflare
+account — the account that owns your domain's zone.
 
-4. **Verify:**
+### 2. Set your API key as a secret
 
-   ```bash
-   # 1. Humans still get your app untouched.
-   curl -sI https://example.com/ | head -3
+```bash
+npx wrangler secret put HADO_API_KEY   # paste hado_sk_... when prompted
+```
 
-   # 2. A bot UA gets prerendered HTML. The FIRST hit of a page may return
-   #    your app shell (the render finishes in the background); run it twice.
-   curl -s -A "GPTBot/1.0" https://example.com/ | head -40
-   curl -s -A "GPTBot/1.0" https://example.com/ | head -40   # → full HTML
-   ```
+The key must be a **secret**, never a `[vars]` entry — vars are visible in the
+Cloudflare dashboard and in `wrangler.toml`. Secrets persist across deploys;
+you only set this once (re-run the same command to rotate the key).
 
-   Then open your Hado SEO dashboard → **Analytics**: the test crawls appear
-   within a few minutes.
+### 3. Deploy
+
+```bash
+npx wrangler deploy
+```
+
+Deploying uploads the Worker and attaches the routes: from this moment every
+request to your domain passes through it. Humans are unaffected (one header
+check, then your app) — there is no cutover moment to schedule, and no DNS
+change to wait on.
+
+### 4. Verify
+
+```bash
+# 1. Humans still get your app untouched.
+curl -sI https://example.com/ | head -3
+
+# 2. A bot UA gets prerendered HTML. The FIRST hit of a page may return
+#    your app shell (the render finishes in the background); run it twice.
+curl -s -A "GPTBot/1.0" https://example.com/ | head -40
+curl -s -A "GPTBot/1.0" https://example.com/ | head -40   # → full HTML
+```
+
+Then open your Hado SEO dashboard → **Analytics**: the test crawls appear
+within a few minutes.
+
+### Updating
+
+Pull the latest template and redeploy — routes, vars, and your secret are
+unchanged by a redeploy:
+
+```bash
+git pull && npm install && npx wrangler deploy
+```
+
+### Watching it run
+
+```bash
+npm run tail        # live request logs (wrangler tail)
+```
+
+### Rolling back
+
+Each deploy creates a new version. If something looks wrong:
+
+```bash
+npx wrangler rollback   # revert to the previously deployed version
+```
+
+Or just remove the routes in the Cloudflare dashboard — traffic then flows
+straight to your app again, exactly as before the Worker existed.
+
+### Uninstalling
+
+```bash
+npx wrangler delete
+```
+
+Deleting the Worker detaches its routes. Your site keeps serving as it did
+before — the Worker never sits between your DNS and your app, so there is
+nothing to migrate back.
+
+### Deploying from CI (optional)
+
+To deploy on every push instead of from your laptop, add a Cloudflare API
+token (dashboard → **My Profile → API Tokens**, "Edit Cloudflare Workers"
+template) to your repo's secrets as `CLOUDFLARE_API_TOKEN`, then:
+
+```yaml .github/workflows/deploy.yml
+name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+```
+
+`HADO_API_KEY` stays where it is — it's a Worker secret in Cloudflare, not a
+repo secret, and deploys never touch it.
 
 ## What the Worker sends
 

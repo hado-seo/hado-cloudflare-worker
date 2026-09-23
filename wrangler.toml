@@ -1,4 +1,6 @@
-# Hado SEO middleware Worker — see https://docs.hadoseo.com/integrations/cloudflare-worker
+# Hado SEO Cloudflare Worker — https://docs.hadoseo.com/integrations/cloudflare-worker
+
+# The Worker's name in YOUR Cloudflare account — rename it to anything you like.
 name = "my-site-seo-proxy"
 main = "src/worker.js"
 compatibility_date = "2025-05-05"
@@ -6,9 +8,7 @@ compatibility_date = "2025-05-05"
 # Route the Worker in front of your site — every hostname that serves
 # pages. Include www (or any other subdomain) if it serves traffic.
 # Replace example.com with your domain in both patterns and zone_name.
-# (NOTE: routes must stay ABOVE [vars] — in TOML, keys after a [table]
-# header belong to that table, and routes inside [vars] silently attach
-# nothing.)
+# Keep routes above the [vars] section.
 routes = [
   { pattern = "example.com/*", zone_name = "example.com" },
   { pattern = "www.example.com/*", zone_name = "example.com" }
