@@ -60,10 +60,14 @@ export default {
         },
       }).finally(() => clearTimeout(timer));
 
-      // 200 → prerendered HTML. Serve it to the bot.
-      if (res.status === 200) {
+      // 200 → prerendered HTML; 404 → a soft-404 snapshot (the app renders
+      // "not found" content for this route). Serve BOTH with their real
+      // status — swallowing the 404 would show crawlers a 200 for a page
+      // that doesn't exist (a soft-404 penalty). 404 is safe to pass
+      // through: Hado's caller errors are only ever 400/401/403/429.
+      if (res.status === 200 || res.status === 404) {
         return new Response(res.body, {
-          status: 200,
+          status: res.status,
           headers: {
             "content-type": "text/html; charset=utf-8",
             // Reuse Hado's cache directives so your edge can cache repeat hits.
@@ -73,7 +77,24 @@ export default {
         });
       }
 
-      // 204 (human/spoofed/over-limit) or any 4xx → fall through to your app.
+      // 301/302/307/308 → a routing rule configured in the Hado dashboard.
+      // Return the redirect to the bot verbatim.
+      const location = res.headers.get("location");
+      if (res.status >= 301 && res.status <= 308 && location) {
+        return new Response(null, { status: res.status, headers: { location } });
+      }
+
+      // A blocked path's noindex/nofollow directives ride the 204 —
+      // copy them onto the app's response as X-Robots-Tag.
+      const robots = res.headers.get("x-hadoseo-robots");
+      if (robots) {
+        const originRes = await fetch(request);
+        const withRobots = new Response(originRes.body, originRes);
+        withRobots.headers.set("x-robots-tag", robots);
+        return withRobots;
+      }
+
+      // Plain 204 (human/spoofed/over-limit) or any 4xx → the app, untouched.
     } catch (err) {
       // Network error or timeout → fail open.
     }
