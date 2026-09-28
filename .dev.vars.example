@@ -1,0 +1,4 @@
+# Local development only (`npm run dev`). Copy to .dev.vars and fill in your
+# key — .dev.vars is gitignored and must never be committed.
+# In production the key is a Wrangler secret: npx wrangler secret put HADO_API_KEY
+HADO_API_KEY=hado_sk_...
