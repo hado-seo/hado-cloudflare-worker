@@ -1,7 +1,36 @@
-// A loose pre-filter. Hado SEO re-verifies bots authoritatively, so this only
-// needs to catch likely crawlers — over-matching is harmless.
-const BOT_UA =
-  /(googlebot|bingbot|yandex|duckduckbot|baiduspider|slurp|applebot|gptbot|oai-searchbot|chatgpt-user|perplexitybot|claudebot|anthropic-ai|ccbot|google-extended|bytespider|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegrambot|petalbot|amazonbot|semrushbot|ahrefsbot)/i;
+// A loose pre-filter derived from Hado's bot registry and known-good crawler
+// list. Hado SEO re-verifies bots authoritatively, so a false positive only
+// costs one subrequest — but every token here must be BOT-specific: a token
+// that also appears in human in-app-browser UAs (e.g. "pinterest",
+// "snapchat") would make real visitors wait on the render call.
+const BOT_UA = new RegExp(
+  [
+    // Search engines
+    "googlebot|googleother|storebot-google|google-inspectiontool|adsbot-google",
+    "adidxbot|mediapartners|apis-google|feedfetcher-google|google-read-aloud",
+    "bingbot|yandex|baiduspider|duckduckbot|slurp|seznambot|sogou|exabot",
+    "petalbot|seekport|bravebot|applebot|amazonbot",
+    // AI crawlers, assistants, and user-initiated agent fetches
+    "gptbot|oai-searchbot|chatgpt-user|chatgpt-agent",
+    "claudebot|claude-user|claude-searchbot|anthropic-ai",
+    "perplexitybot|perplexity-user|mistralai-user|duckassistbot|amzn-user",
+    "google-extended|google-cloudvertexbot|google-notebooklm",
+    "gemini-deep-research|googleagent-mariner|meta-externalfetcher",
+    "ccbot|bytespider|tiktokspider|youbot|cohere|diffbot|omgili|ai2bot",
+    "timpibot|tavilybot",
+    // Social & messaging link previews
+    "facebookexternalhit|facebookbot|facebot|meta-externalagent|twitterbot",
+    "linkedinbot|pinterestbot|slackbot|slack-imgproxy|discordbot|whatsapp",
+    "telegrambot|redditbot|quora-bot|bitlybot|skypeuripreview",
+    "googlemessages|google-chat-link-preview|bufferlinkpreviewbot",
+    "metadatascraper",
+    // SEO & monitoring tools
+    "ahrefsbot|semrushbot|siteauditbot|dataforseobot|rsiteauditor|sebot-wa",
+    "screaming frog|mj12bot|dotbot|rogerbot|blexbot|barkrowler|serpstatbot",
+    "seokicks|gtmetrix|uptimebot|ia_archiver|archive\\.org_bot",
+  ].join("|"),
+  "i",
+);
 
 // How long to wait for a cold render before giving up and serving your app.
 const RENDER_TIMEOUT_MS = 15000;
